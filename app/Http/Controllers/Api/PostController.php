@@ -27,8 +27,8 @@ class PostController extends Controller
                 'description' => $post->description,
                 'price' => $post->price,
                 'location' => $post->location,
-                'created_at' => $post->created_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
-                'updated_at' => $post->updated_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
+                'created_at' => $post->created_at ? $post->created_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i') : null,
+                'updated_at' => $post->updated_at ? $post->updated_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i') : null,
             ]
         ], 201);
     }
@@ -42,8 +42,8 @@ class PostController extends Controller
                 'description' => $post->description,
                 'price' => $post->price,
                 'location' => $post->location,
-                'created_at' => $post->created_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
-                'updated_at' => $post->updated_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
+                'created_at' => $post->created_at ? $post->created_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i') : null,
+                'updated_at' => $post->updated_at ? $post->updated_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i') : null,
             ];
         });
 
