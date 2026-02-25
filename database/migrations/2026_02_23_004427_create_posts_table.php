@@ -15,9 +15,15 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->text('description');
-            $table->string('price')->nullable();
+            $table->decimal('price', 10, 2)->default(0.00);
             $table->string('location')->nullable();
             $table->timestamps();
+            $table->enum('producer_type', [
+        'autonomous',
+        'organic',
+        'corporate',
+        'company'
+    ]);
         });
     }
 
