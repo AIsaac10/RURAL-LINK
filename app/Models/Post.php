@@ -14,5 +14,6 @@ class Post extends Model
         'description',
         'price',
         'location',
+        'producer_type',
     ];
 }
