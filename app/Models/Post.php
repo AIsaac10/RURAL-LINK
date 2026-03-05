@@ -15,5 +15,6 @@ class Post extends Model
         'price',
         'location',
         'producer_type',
+        'user_id'
     ];
 }
