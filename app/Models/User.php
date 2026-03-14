@@ -35,6 +35,11 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+
+    public function favorites()
+    {
+        return $this->belongsToMany(Post::class, 'favorites');
+    }
     /**
      * Get the attributes that should be cast.
      *
