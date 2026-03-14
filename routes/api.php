@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\FavoriteController; // <-- Adicionado aqui!
 
 /*
 |--------------------------------------------------------------------------
@@ -41,4 +42,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // deletar post
     Route::delete('/posts/{id}', [PostController::class, 'destroy']);
+    
+    // --- ROTAS DE FAVORITOS ---
+    
+    // favoritar ou desfavoritar um post
+    Route::post('/favorites/toggle', [FavoriteController::class, 'toggle']);
+    
+    // listar todos os favoritos do usuário logado
+    Route::get('/favorites', [FavoriteController::class, 'index']);
 });
