@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\FavoriteController; // <-- Adicionado aqui!
 
 /*
@@ -15,7 +16,9 @@ use App\Http\Controllers\FavoriteController; // <-- Adicionado aqui!
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::get('/posts', [PostController::class, 'index']); // listar posts
+Route::get('/posts', [PostController::class, 'index']); 
+
+Route::get('/posts/search', [SearchController::class, 'index']);
 
 
 /*
