@@ -50,7 +50,7 @@ public function index(Request $request)
     /**
      * Display the specified resource.
      */
-    public function show(publicar $publicar)
+    public function show(Post $publicar)
     {
         //
     }
@@ -58,7 +58,7 @@ public function index(Request $request)
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(publicar $publicar)
+    public function edit(Post $publicar)
     {
         //
     }
@@ -66,7 +66,7 @@ public function index(Request $request)
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, publicar $publicar)
+    public function update(Request $request, Post $publicar)
     {
         //
     }
@@ -74,7 +74,7 @@ public function index(Request $request)
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(publicar $publicar)
+    public function destroy(Post $publicar)
     {
         //
     }
