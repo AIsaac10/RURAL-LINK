@@ -29,6 +29,9 @@ Route::get('/posts/search', [SearchController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
+    // editar perfil
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
+
     // usuário logado
     Route::get('/user', function (Request $request) {
         return response()->json($request->user());

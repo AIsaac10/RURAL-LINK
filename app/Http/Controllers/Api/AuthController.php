@@ -17,6 +17,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'phone' => 'required',
+            'location' => 'required|string|max:255',
             'password' => 'required|min:6'
         ]);
 
@@ -24,6 +25,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
+            'location' => $request->location,
             'password' => Hash::make($request->password),
         ]);
 
@@ -68,4 +70,31 @@ class AuthController extends Controller
             'message' => 'Logout realizado com sucesso'
         ]);
     }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'phone' => 'sometimes',
+            'password' => 'sometimes|min:6'
+        ]);
+
+        $data = $request->only(['name','email','phone','password']);
+
+        if(isset($data['password'])){
+            $data['password'] = Hash::make($data['password']);
+        }
+
+        $user->update($data);
+
+        return response()->json([
+            'message' => 'Perfil atualizado com sucesso',
+            'user' => $user
+        ]);
+    }
 }
+
+
