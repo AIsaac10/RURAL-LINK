@@ -17,6 +17,8 @@ class PostController extends Controller
             'location' => 'nullable|string',
             'stock' => 'nullable|numeric',
             'producer_type' => 'nullable|string',
+            'seals' => 'nullable|array',
+            'seals.*' => 'in:autonomo,cooperativa,empresa,organico',
         ]);
 
         $post = Post::create([
@@ -27,6 +29,7 @@ class PostController extends Controller
             'location' => $data['location'] ?? null,
             'stock' => $data['stock'] ?? null,
             'producer_type' => $data['producer_type'] ?? null,
+            'seals' => isset($data['seals']) ? json_encode($data['seals']) : null,
         ]);
 
         return response()->json([
@@ -40,6 +43,7 @@ class PostController extends Controller
                 'location' => $post->location,
                 'stock' => $post->stock,
                 'producer_type' => $post->producer_type,
+                'seals' => $post->seals ? json_decode($post->seals) : [],
                 'created_at' => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
                 'updated_at' => $post->updated_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
             ]
@@ -60,6 +64,7 @@ class PostController extends Controller
                 'location' => $post->location,
                 'stock' => $post->stock,
                 'producer_type' => $post->producer_type,
+                'seals' => $post->seals ? json_decode($post->seals) : [],
                 'created_at' => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
                 'updated_at' => $post->updated_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
             ];
@@ -85,7 +90,13 @@ class PostController extends Controller
             'location' => 'nullable|string',
             'stock' => 'nullable|numeric',
             'producer_type' => 'nullable|string',
+            'seals' => 'nullable|array',
+            'seals.*' => 'in:autonomo,cooperativa,empresa,organico',
         ]);
+
+        if(isset($data['seals'])){
+        $data['seals'] = json_encode($data['seals']);
+        }
 
         $post->update($data);
 
