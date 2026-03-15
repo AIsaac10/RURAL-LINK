@@ -15,14 +15,18 @@ class PostController extends Controller
             'description' => 'required|string',
             'price' => 'nullable|string',
             'location' => 'nullable|string',
+            'stock' => 'nullable|numeric',
+            'producer_type' => 'nullable|string',
         ]);
 
         $post = Post::create([
-            'user_id' => $request->user()->id, // usuário dono do post
+            'user_id' => $request->user()->id,
             'title' => $data['title'],
             'description' => $data['description'],
             'price' => $data['price'] ?? null,
             'location' => $data['location'] ?? null,
+            'stock' => $data['stock'] ?? null,
+            'producer_type' => $data['producer_type'] ?? null,
         ]);
 
         return response()->json([
@@ -34,6 +38,8 @@ class PostController extends Controller
                 'description' => $post->description,
                 'price' => $post->price,
                 'location' => $post->location,
+                'stock' => $post->stock,
+                'producer_type' => $post->producer_type,
                 'created_at' => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
                 'updated_at' => $post->updated_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
             ]
@@ -47,10 +53,13 @@ class PostController extends Controller
                 'id' => $post->id,
                 'user_id' => $post->user_id,
                 'user_name' => $post->user->name ?? null,
+                'user_phone' => $post->user->phone ?? null,
                 'title' => $post->title,
                 'description' => $post->description,
                 'price' => $post->price,
                 'location' => $post->location,
+                'stock' => $post->stock,
+                'producer_type' => $post->producer_type,
                 'created_at' => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
                 'updated_at' => $post->updated_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
             ];
@@ -63,7 +72,6 @@ class PostController extends Controller
     {
         $post = Post::findOrFail($id);
 
-        // só o dono pode editar
         if ($post->user_id !== $request->user()->id) {
             return response()->json([
                 'message' => 'Não autorizado'
@@ -75,6 +83,8 @@ class PostController extends Controller
             'description' => 'sometimes|string',
             'price' => 'nullable|string',
             'location' => 'nullable|string',
+            'stock' => 'nullable|numeric',
+            'producer_type' => 'nullable|string',
         ]);
 
         $post->update($data);
@@ -89,7 +99,6 @@ class PostController extends Controller
     {
         $post = Post::findOrFail($id);
 
-        // só o dono pode deletar
         if ($post->user_id !== $request->user()->id) {
             return response()->json([
                 'message' => 'Não autorizado'
