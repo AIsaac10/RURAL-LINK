@@ -48,8 +48,15 @@ class PostController extends Controller
             'price'       => 'nullable|string',
             'location'    => 'nullable|string',
             'stock'       => 'nullable|numeric',
+            'image' => 'nullable|image|max:2048',
         ]);
- 
+
+        $imagePath = null;
+
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('posts', 'public');
+        }
+
         $post = Post::create([
             'user_id'     => $request->user()->id,
             'title'       => $request->title,
@@ -58,6 +65,7 @@ class PostController extends Controller
             'location'    => $request->location ?? null,
             'stock'       => $request->stock ?? null,
             'seals'       => $this->parseSeals($request->input('seals')),
+            'image'       => $imagePath,
         ]);
  
         return response()->json([
@@ -71,6 +79,7 @@ class PostController extends Controller
                 'location'    => $post->location,
                 'stock'       => $post->stock,
                 'seals'       => $this->formatSeals($post->seals),
+                'image' => $post->image ? asset('storage/' . $post->image) : null,
                 'created_at'  => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
                 'updated_at'  => $post->updated_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
             ]
