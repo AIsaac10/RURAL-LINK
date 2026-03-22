@@ -75,14 +75,15 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        $request->validate([
+       $request->validate([
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'phone' => 'sometimes',
+            'location' => 'sometimes|string|max:255',
             'password' => 'sometimes|min:6'
         ]);
 
-        $data = $request->only(['name','email','phone','password']);
+        $data = $request->only(['name','email','phone','location','password']);
 
         if(isset($data['password'])){
             $data['password'] = Hash::make($data['password']);
