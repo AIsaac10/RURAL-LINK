@@ -1,45 +1,57 @@
 <?php
- 
+
 namespace App\Http\Controllers\Api;
- 
+
 use App\Http\Controllers\Controller;
 use App\Models\Post;
 use Illuminate\Http\Request;
- 
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
 class PostController extends Controller
 {
     private function parseSeals($value): ?string
     {
         if (empty($value)) return null;
- 
+
         if (is_array($value)) {
             return json_encode(array_values($value));
         }
- 
+
         if (is_string($value)) {
             $clean = trim($value, '[]');
             $items = array_values(array_filter(array_map('trim', explode(',', $clean))));
             return !empty($items) ? json_encode($items) : null;
         }
- 
+
         return null;
     }
- 
+
     private function formatSeals(?string $seals): array
     {
         if (!$seals) return [];
- 
+
         $map = [
             'autonomo'    => 'Autônomo',
             'empresa'     => 'Empresa',
             'cooperativa' => 'Cooperativa',
             'organico'    => 'Orgânico',
         ];
- 
+
         $items = json_decode($seals, true) ?? [];
         return array_map(fn($s) => $map[$s] ?? $s, $items);
     }
- 
+
+    private function saveUploadedImage($file): ?string
+    {
+        if (!$file) return null;
+
+        $filename = 'posts/' . Str::uuid() . '.' . $file->getClientOriginalExtension();
+        Storage::disk('public')->put($filename, file_get_contents($file));
+
+        return $filename;
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -48,14 +60,8 @@ class PostController extends Controller
             'price'       => 'nullable|string',
             'location'    => 'nullable|string',
             'stock'       => 'nullable|numeric',
-            'image' => 'nullable|image|max:2048',
+            'image'       => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
-
-        $imagePath = null;
-
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('posts', 'public');
-        }
 
         $post = Post::create([
             'user_id'     => $request->user()->id,
@@ -65,9 +71,9 @@ class PostController extends Controller
             'location'    => $request->location ?? null,
             'stock'       => $request->stock ?? null,
             'seals'       => $this->parseSeals($request->input('seals')),
-            'image'       => $imagePath,
+            'image'       => $this->saveUploadedImage($request->file('image')),
         ]);
- 
+
         return response()->json([
             'message' => 'Postagem criada com sucesso',
             'post' => [
@@ -79,13 +85,13 @@ class PostController extends Controller
                 'location'    => $post->location,
                 'stock'       => $post->stock,
                 'seals'       => $this->formatSeals($post->seals),
-                'image' => $post->image ? asset('storage/' . $post->image) : null,
+                'image'       => $post->image ? asset('storage/' . $post->image) : null,
                 'created_at'  => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
                 'updated_at'  => $post->updated_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
             ]
         ], 201);
     }
- 
+
     public function index()
     {
         $posts = Post::with('user')->latest()->get()->map(function ($post) {
@@ -100,54 +106,79 @@ class PostController extends Controller
                 'location'    => $post->location,
                 'stock'       => $post->stock,
                 'seals'       => $this->formatSeals($post->seals),
+                'image'       => $post->image ? asset('storage/' . $post->image) : null,
                 'created_at'  => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
                 'updated_at'  => $post->updated_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
             ];
         });
- 
+
         return response()->json($posts);
     }
- 
+
     public function update(Request $request, $id)
     {
         $post = Post::findOrFail($id);
- 
+
         if ($post->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Não autorizado'], 403);
         }
- 
+
         $request->validate([
             'title'       => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
             'price'       => 'nullable|string',
             'location'    => 'nullable|string',
             'stock'       => 'nullable|numeric',
+            'image'       => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
- 
+
         $data = $request->only(['title', 'description', 'price', 'location', 'stock']);
- 
+
         if ($request->has('seals')) {
             $data['seals'] = $this->parseSeals($request->input('seals'));
         }
- 
+
+        if ($request->hasFile('image')) {
+            if ($post->image) {
+                Storage::disk('public')->delete($post->image);
+            }
+            $data['image'] = $this->saveUploadedImage($request->file('image'));
+        }
+
         $post->update($data);
- 
+
         return response()->json([
             'message' => 'Postagem atualizada com sucesso',
-            'post'    => $post
+            'post' => [
+                'id'          => $post->id,
+                'user_id'     => $post->user_id,
+                'title'       => $post->title,
+                'description' => $post->description,
+                'price'       => $post->price,
+                'location'    => $post->location,
+                'stock'       => $post->stock,
+                'seals'       => $this->formatSeals($post->seals),
+                'image'       => $post->image ? asset('storage/' . $post->image) : null,
+                'created_at'  => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
+                'updated_at'  => $post->updated_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
+            ]
         ]);
     }
- 
+
     public function destroy(Request $request, $id)
     {
         $post = Post::findOrFail($id);
- 
+
         if ($post->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Não autorizado'], 403);
         }
- 
+
+        if ($post->image) {
+            Storage::disk('public')->delete($post->image);
+        }
+
         $post->delete();
- 
+
         return response()->json(['message' => 'Postagem deletada com sucesso']);
     }
 }
