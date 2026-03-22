@@ -48,7 +48,7 @@ class PostController extends Controller
             'price'       => 'nullable|string',
             'location'    => 'nullable|string',
             'stock'       => 'nullable|numeric',
-            'image' => 'nullable|image|max:2048',
+            'image'       => 'nullable|image|max:2048',
         ]);
 
         $imagePath = null;

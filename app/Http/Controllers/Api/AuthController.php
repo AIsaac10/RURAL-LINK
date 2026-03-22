@@ -18,7 +18,8 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users',
             'phone' => 'required',
             'location' => 'required|string|max:255',
-            'password' => 'required|min:6'
+            'password' => 'required|min:6',
+            'profile_image' => 'nullable|image|max:2048'
         ]);
 
         $user = User::create([
@@ -27,6 +28,7 @@ class AuthController extends Controller
             'phone' => $request->phone,
             'location' => $request->location,
             'password' => Hash::make($request->password),
+            'profile_image' => $imagePath
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -71,6 +73,7 @@ class AuthController extends Controller
         ]);
     }
 
+    // UPDATE PROFILE
     public function updateProfile(Request $request)
     {
         $user = $request->user();
@@ -79,13 +82,20 @@ class AuthController extends Controller
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'phone' => 'sometimes',
-            'password' => 'sometimes|min:6'
+            'password' => 'sometimes|min:6',
+            'location' => 'sometimes|string|max:255',
+            'profile_image' => 'nullable|image|max:2048'
         ]);
 
         $data = $request->only(['name','email','phone','password']);
 
         if(isset($data['password'])){
             $data['password'] = Hash::make($data['password']);
+        }
+
+        if ($request->hasFile('profile_image')) {
+            $imagePath = $request->file('profile_image')->store('profiles', 'public');
+            $data['profile_image'] = $imagePath;
         }
 
         $user->update($data);
