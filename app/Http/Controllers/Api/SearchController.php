@@ -15,10 +15,14 @@ class SearchController extends Controller
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
+                  ->orWhere('description', 'like', '%' . $request->search . '%')
+                  ->orWhere('price', 'like', '%' . $request->search . '%')
+                  ->orWhere('stock', 'like', '%' . $request->search . '%')
+                  ->orWhere('location', 'like', '%' . $request->search . '%')
+                  ->orWhere('seals', 'like', '%' . $request->search . '%');
             });
         }
- 
+
         if ($request->filled('seals')) {
             $query->where('seals', 'like', '%' . $request->seals . '%');
         }
