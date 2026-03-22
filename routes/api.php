@@ -16,12 +16,16 @@ use App\Http\Controllers\Api\FavoriteController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
  
-Route::get('/posts', [PostController::class, 'index']); 
+Route::get('/posts', [PostController::class, 'index']);
  
 Route::get('/posts/search', [SearchController::class, 'index']);
  
 // criar post — token vem do body via middleware
 Route::post('/posts', [PostController::class, 'store'])
+    ->middleware(['token.from.body', 'auth:sanctum']);
+ 
+// editar perfil — token vem do body via middleware
+Route::put('/profile', [AuthController::class, 'updateProfile'])
     ->middleware(['token.from.body', 'auth:sanctum']);
  
 /*
@@ -31,9 +35,6 @@ Route::post('/posts', [PostController::class, 'store'])
 */
  
 Route::middleware('auth:sanctum')->group(function () {
- 
-    // editar perfil
-    Route::put('/profile', [AuthController::class, 'updateProfile']);
  
     // usuário logado
     Route::get('/user', function (Request $request) {
@@ -48,7 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
  
     // deletar post
     Route::delete('/posts/{id}', [PostController::class, 'destroy']);
-    
+ 
     // --- ROTAS DE FAVORITOS ---
     Route::post('/favorites/toggle', [FavoriteController::class, 'toggle']);
     Route::get('/favorites', [FavoriteController::class, 'index']);
