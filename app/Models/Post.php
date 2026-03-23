@@ -17,6 +17,7 @@ class Post extends Model
         'user_id',
         'stock',
         'seals',
+        'image',
         
     ];
  
