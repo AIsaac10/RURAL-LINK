@@ -23,6 +23,11 @@ class AuthController extends Controller
             'description' => 'nullable|string'
         ]);
 
+        $imagePath = null;
+        if ($request->hasFile('profile_image')) {
+            $imagePath = $request->file('profile_image')->store('profiles', 'public');
+        }
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
