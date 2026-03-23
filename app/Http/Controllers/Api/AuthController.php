@@ -19,7 +19,8 @@ class AuthController extends Controller
             'phone' => 'required',
             'location' => 'required|string|max:255',
             'password' => 'required|min:6',
-            'profile_image' => 'nullable|image|max:2048'
+            'profile_image' => 'nullable|image|max:2048',
+            'description' => 'nullable|string'
         ]);
 
         $user = User::create([
@@ -28,7 +29,8 @@ class AuthController extends Controller
             'phone' => $request->phone,
             'location' => $request->location,
             'password' => Hash::make($request->password),
-            'profile_image' => $imagePath
+            'profile_image' => $imagePath,
+            'description' => $request->description
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -84,10 +86,11 @@ class AuthController extends Controller
             'phone' => 'sometimes',
             'password' => 'sometimes|min:6',
             'location' => 'sometimes|string|max:255',
-            'profile_image' => 'nullable|image|max:2048'
+            'profile_image' => 'nullable|image|max:2048',
+            'description' => 'nullable|string'
         ]);
 
-        $data = $request->only(['name','email','phone','location','password']);
+        $data = $request->only(['name','email','phone','location','password','description']);
 
         if(isset($data['password'])){
             $data['password'] = Hash::make($data['password']);
