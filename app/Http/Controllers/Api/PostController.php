@@ -10,7 +10,6 @@ use Illuminate\Support\Str;
 
 class PostController extends Controller
 {
-    // Método central para padronizar o que o App recebe
     private function transformPost(Post $post): array
     {
         return [
@@ -68,6 +67,17 @@ class PostController extends Controller
     public function index()
     {
         $posts = Post::with('user')->latest()->get()->map(fn($p) => $this->transformPost($p));
+        return response()->json($posts);
+    }
+
+    public function myPosts(Request $request) // ← novo
+    {
+        $posts = Post::with('user')
+            ->where('user_id', $request->user()->id)
+            ->latest()
+            ->get()
+            ->map(fn($p) => $this->transformPost($p));
+
         return response()->json($posts);
     }
 
