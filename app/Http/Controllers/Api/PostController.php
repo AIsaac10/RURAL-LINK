@@ -13,15 +13,15 @@ class PostController extends Controller
     private function transformPost(Post $post): array
     {
         return [
-            'id'          => $post->id,
-            'user_id'     => $post->user_id,
+            'id'          => (string) $post->id,
+            'user_id'     => (string) $post->user_id,
             'user_name'   => $post->user->name ?? null,
             'user_phone'  => $post->user->phone ?? null,
             'title'       => $post->title,
             'description' => $post->description,
-            'price'       => $post->price ? (float) $post->price : 0.0,
+            'price'       => $post->price ? (string) $post->price : '0',
             'location'    => $post->location,
-            'stock'       => $post->stock ? (float) $post->stock : 0.0,
+            'stock'       => $post->stock ? (string) $post->stock : '0',
             'seals'       => $this->formatSeals($post->seals),
             'image'       => $post->image ? asset('storage/' . $post->image) : null,
             'created_at'  => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
@@ -70,7 +70,7 @@ class PostController extends Controller
         return response()->json($posts);
     }
 
-    public function myPosts(Request $request) // ← novo
+    public function myPosts(Request $request)
     {
         $posts = Post::with('user')
             ->where('user_id', $request->user()->id)
@@ -84,14 +84,14 @@ class PostController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string',
-            'price' => 'nullable|numeric',
-            'image' => 'nullable|file|image|max:5120',
+            'title'        => 'required|string',
+            'price'        => 'nullable|numeric',
+            'image'        => 'nullable|file|image|max:5120',
             'image_base64' => 'nullable|string',
         ]);
 
-        $imagePath = $request->hasFile('image') 
-            ? $this->saveUploadedImage($request->file('image')) 
+        $imagePath = $request->hasFile('image')
+            ? $this->saveUploadedImage($request->file('image'))
             : $this->saveBase64Image($request->input('image_base64'));
 
         $post = Post::create(array_merge($request->all(), [
@@ -109,11 +109,11 @@ class PostController extends Controller
         if ($post->user_id !== $request->user()->id) return response()->json(['message' => 'Não autorizado'], 403);
 
         $data = $request->only(['title', 'description', 'price', 'location', 'stock']);
-        
+
         if ($request->hasFile('image') || $request->filled('image_base64')) {
             if ($post->image) Storage::disk('public')->delete($post->image);
-            $data['image'] = $request->hasFile('image') 
-                ? $this->saveUploadedImage($request->file('image')) 
+            $data['image'] = $request->hasFile('image')
+                ? $this->saveUploadedImage($request->file('image'))
                 : $this->saveBase64Image($request->input('image_base64'));
         }
 
