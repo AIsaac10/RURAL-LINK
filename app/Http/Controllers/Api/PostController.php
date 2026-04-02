@@ -13,17 +13,18 @@ class PostController extends Controller
     private function transformPost(Post $post): array
     {
         return [
-            'id'          => (string) $post->id,
-            'user_id'     => (string) $post->user_id,
+            // Mantendo os tipos originais (int/double) para o Flutter
+            'id'          => $post->id,
+            'user_id'     => $post->user_id,
             'user_name'   => $post->user->name ?? null,
             'user_phone'  => $post->user->phone ?? null,
             'title'       => $post->title,
             'description' => $post->description,
-            'price'       => $post->price ? (string) $post->price : '0',
+            'price'       => $post->price ? (double) $post->price : 0.0,
             'location'    => $post->location,
-            'stock'       => $post->stock ? (string) $post->stock : '0',
+            'stock'       => $post->stock ? (int) $post->stock : 0,
             'seals'       => $this->formatSeals($post->seals),
-            'image'       => $post->image ?? null,
+            'image'       => $post->image ? asset('storage/' . $post->image) : null,
             'created_at'  => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
         ];
     }
@@ -43,12 +44,7 @@ class PostController extends Controller
     private function formatSeals(?string $seals): array
     {
         if (!$seals) return [];
-        $map = [
-            'autonomo'    => 'Autônomo',
-            'empresa'     => 'Empresa',
-            'cooperativa' => 'Cooperativa',
-            'organico'    => 'Orgânico'
-        ];
+        $map = ['autonomo' => 'Autônomo', 'empresa' => 'Empresa', 'cooperativa' => 'Cooperativa', 'organico' => 'Orgânico'];
         $items = json_decode($seals, true) ?? [];
         return array_map(fn($s) => $map[$s] ?? $s, $items);
     }
@@ -125,10 +121,7 @@ class PostController extends Controller
     public function update(Request $request, $id)
     {
         $post = Post::findOrFail($id);
-
-        if ($post->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Não autorizado'], 403);
-        }
+        if ($post->user_id !== $request->user()->id) return response()->json(['message' => 'Não autorizado'], 403);
 
         $validated = $request->validate([
             'title'        => 'sometimes|required|string|max:255',
@@ -144,37 +137,24 @@ class PostController extends Controller
         $post->fill($request->only(['title', 'description', 'price', 'location', 'stock']));
 
         if ($request->hasFile('image') || $request->filled('image_base64')) {
-            if ($post->image) {
-                Storage::disk('public')->delete($post->image);
-            }
+            if ($post->image) Storage::disk('public')->delete($post->image);
             $post->image = $request->hasFile('image')
                 ? $this->saveUploadedImage($request->file('image'))
                 : $this->saveBase64Image($request->input('image_base64'));
         }
 
-        if ($request->has('seals')) {
-            $post->seals = $this->parseSeals($request->input('seals'));
-        }
+        if ($request->has('seals')) $post->seals = $this->parseSeals($request->input('seals'));
 
         $post->save();
-
         return response()->json(['message' => 'Atualizado!', 'post' => $this->transformPost($post)]);
     }
 
     public function destroy(Request $request, $id)
     {
         $post = Post::findOrFail($id);
-
-        if ($post->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Não autorizado'], 403);
-        }
-
-        if ($post->image) {
-            Storage::disk('public')->delete($post->image);
-        }
-
+        if ($post->user_id !== $request->user()->id) return response()->json(['message' => 'Não autorizado'], 403);
+        if ($post->image) Storage::disk('public')->delete($post->image);
         $post->delete();
-
         return response()->json(['message' => 'Deletado!']);
     }
 }
