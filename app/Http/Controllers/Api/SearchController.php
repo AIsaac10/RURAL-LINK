@@ -1,17 +1,18 @@
 <?php
- 
+
 namespace App\Http\Controllers\Api;
- 
+
 use App\Http\Controllers\Controller;
 use App\Models\Post;
 use Illuminate\Http\Request;
- 
+use Illuminate\Support\Facades\Storage; // Importante para gerar URLs
+
 class SearchController extends Controller
 {
     public function index(Request $request)
     {
         $query = Post::query();
- 
+
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
@@ -26,7 +27,7 @@ class SearchController extends Controller
         if ($request->filled('seals')) {
             $query->where('seals', 'like', '%' . $request->seals . '%');
         }
- 
+
         $resultados = $query->with('user')->get()->map(function ($post) {
             return [
                 'id'          => $post->id,
@@ -39,11 +40,13 @@ class SearchController extends Controller
                 'location'    => $post->location,
                 'stock'       => $post->stock,
                 'seals'       => $post->seals ? json_decode($post->seals) : [],
+                'image'       => $post->image ? asset('storage/' . $post->image) : null,
+                
                 'created_at'  => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
                 'updated_at'  => $post->updated_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
             ];
         });
- 
+
         return response()->json($resultados, 200);
     }
 }
