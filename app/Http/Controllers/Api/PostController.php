@@ -10,20 +10,20 @@ use Illuminate\Support\Str;
 
 class PostController extends Controller
 {
-    private function transformPost(Post $post): array
+private function transformPost(Post $post): array
     {
         return [
-            'id'          => (string) $post->id,
-            'user_id'     => (string) $post->user_id,
+            'id'          => (int) $post->id,
+            'user_id'     => (int) $post->user_id,
             'user_name'   => $post->user->name ?? null,
             'user_phone'  => $post->user->phone ?? null,
             'title'       => $post->title,
             'description' => $post->description,
-            'price'       => $post->price ? (string) $post->price : '0',
+            'price'       => $post->price ? (double) $post->price : 0.0,
             'location'    => $post->location,
-            'stock'       => $post->stock ? (string) $post->stock : '0',
+            'stock'       => $post->stock ? (int) $post->stock : 0,
             'seals'       => $this->formatSeals($post->seals),
-            'image'       => $post->image ?? null,
+            'image'       => $post->image ? asset('storage/' . $post->image) : null,
             'created_at'  => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
         ];
     }
