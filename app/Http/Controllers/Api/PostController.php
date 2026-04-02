@@ -23,8 +23,7 @@ class PostController extends Controller
             'location'    => $post->location,
             'stock'       => $post->stock ? (string) $post->stock : '0',
             'seals'       => $this->formatSeals($post->seals),
-            'image'       => $post->image ? asset('storage/' . $post->image) : null,
-            
+            'image'       => $post->image ?? null,
             'created_at'  => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
         ];
     }
@@ -45,9 +44,9 @@ class PostController extends Controller
     {
         if (!$seals) return [];
         $map = [
-            'autonomo'    => 'Autônomo', 
-            'empresa'     => 'Empresa', 
-            'cooperativa' => 'Cooperativa', 
+            'autonomo'    => 'Autônomo',
+            'empresa'     => 'Empresa',
+            'cooperativa' => 'Cooperativa',
             'organico'    => 'Orgânico'
         ];
         $items = json_decode($seals, true) ?? [];
@@ -56,7 +55,6 @@ class PostController extends Controller
 
     private function saveUploadedImage($file): ?string
     {
-        // Salva na pasta 'posts' dentro de 'public' e retorna apenas o path relativo
         return $file ? $file->store('posts', 'public') : null;
     }
 
@@ -127,10 +125,11 @@ class PostController extends Controller
     public function update(Request $request, $id)
     {
         $post = Post::findOrFail($id);
-        
+
         if ($post->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Não autorizado'], 403);
         }
+
         $validated = $request->validate([
             'title'        => 'sometimes|required|string|max:255',
             'description'  => 'nullable|string',
@@ -142,10 +141,8 @@ class PostController extends Controller
             'seals'        => 'nullable'
         ]);
 
-        // Atualiza campos de texto/número
         $post->fill($request->only(['title', 'description', 'price', 'location', 'stock']));
 
-        // Gerenciamento de imagem (deleta antiga se enviar uma nova)
         if ($request->hasFile('image') || $request->filled('image_base64')) {
             if ($post->image) {
                 Storage::disk('public')->delete($post->image);
@@ -167,7 +164,7 @@ class PostController extends Controller
     public function destroy(Request $request, $id)
     {
         $post = Post::findOrFail($id);
-        
+
         if ($post->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Não autorizado'], 403);
         }
@@ -175,7 +172,7 @@ class PostController extends Controller
         if ($post->image) {
             Storage::disk('public')->delete($post->image);
         }
-        
+
         $post->delete();
 
         return response()->json(['message' => 'Deletado!']);
