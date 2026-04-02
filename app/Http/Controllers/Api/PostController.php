@@ -10,21 +10,24 @@ use Illuminate\Support\Str;
 
 class PostController extends Controller
 {
+    /**
+     * Transforma o post garantindo que ID, Preço e Estoque sejam Strings.
+     * Isso evita o erro "type 'String' is not a subtype of type 'int'" no seu Flutter.
+     */
     private function transformPost(Post $post): array
     {
         return [
-            // Mantendo os tipos originais (int/double) para o Flutter
-            'id'          => $post->id,
-            'user_id'     => $post->user_id,
+            'id'          => (string) $post->id,
+            'user_id'     => (string) $post->user_id,
             'user_name'   => $post->user->name ?? null,
             'user_phone'  => $post->user->phone ?? null,
             'title'       => $post->title,
             'description' => $post->description,
-            'price'       => $post->price ? (double) $post->price : 0.0,
+            'price'       => $post->price ? (string) $post->price : '0',
             'location'    => $post->location,
-            'stock'       => $post->stock ? (int) $post->stock : 0,
+            'stock'       => $post->stock ? (string) $post->stock : '0',
             'seals'       => $this->formatSeals($post->seals),
-            'image'       => $post->image ? asset('storage/' . $post->image) : null,
+            'image'       => $post->image ?? null, 
             'created_at'  => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
         ];
     }
@@ -44,7 +47,12 @@ class PostController extends Controller
     private function formatSeals(?string $seals): array
     {
         if (!$seals) return [];
-        $map = ['autonomo' => 'Autônomo', 'empresa' => 'Empresa', 'cooperativa' => 'Cooperativa', 'organico' => 'Orgânico'];
+        $map = [
+            'autonomo'    => 'Autônomo', 
+            'empresa'     => 'Empresa', 
+            'cooperativa' => 'Cooperativa', 
+            'organico'    => 'Orgânico'
+        ];
         $items = json_decode($seals, true) ?? [];
         return array_map(fn($s) => $map[$s] ?? $s, $items);
     }
@@ -61,7 +69,6 @@ class PostController extends Controller
             $base64 = preg_replace('/^data:image\/\w+;base64,/', '', $base64);
             $decoded = base64_decode($base64);
             if (!$decoded) return null;
-
             $filename = 'posts/' . Str::uuid() . '.jpg';
             Storage::disk('public')->put($filename, $decoded);
             return $filename;
@@ -92,12 +99,11 @@ class PostController extends Controller
         $validated = $request->validate([
             'title'        => 'required|string|max:255',
             'description'  => 'nullable|string',
-            'price'        => 'nullable|numeric|min:0',
+            'price'        => 'nullable|numeric',
             'location'     => 'nullable|string',
-            'stock'        => 'nullable|integer|min:0',
+            'stock'        => 'nullable|integer',
             'image'        => 'nullable|file|image|max:5120',
             'image_base64' => 'nullable|string',
-            'seals'        => 'nullable'
         ]);
 
         $imagePath = $request->hasFile('image')
@@ -106,11 +112,11 @@ class PostController extends Controller
 
         $post = Post::create([
             'user_id'     => $request->user()->id,
-            'title'       => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'price'       => $validated['price'] ?? 0,
-            'location'    => $validated['location'] ?? null,
-            'stock'       => $validated['stock'] ?? 0,
+            'title'       => $request->title,
+            'description' => $request->description,
+            'price'       => $request->price ?? 0,
+            'location'    => $request->location,
+            'stock'       => $request->stock ?? 0,
             'image'       => $imagePath,
             'seals'       => $this->parseSeals($request->input('seals'))
         ]);
@@ -123,29 +129,18 @@ class PostController extends Controller
         $post = Post::findOrFail($id);
         if ($post->user_id !== $request->user()->id) return response()->json(['message' => 'Não autorizado'], 403);
 
-        $validated = $request->validate([
-            'title'        => 'sometimes|required|string|max:255',
-            'description'  => 'nullable|string',
-            'price'        => 'nullable|numeric|min:0',
-            'location'     => 'nullable|string',
-            'stock'        => 'nullable|integer|min:0',
-            'image'        => 'nullable|file|image|max:5120',
-            'image_base64' => 'nullable|string',
-            'seals'        => 'nullable'
-        ]);
-
-        $post->fill($request->only(['title', 'description', 'price', 'location', 'stock']));
+        $data = $request->only(['title', 'description', 'price', 'location', 'stock']);
 
         if ($request->hasFile('image') || $request->filled('image_base64')) {
             if ($post->image) Storage::disk('public')->delete($post->image);
-            $post->image = $request->hasFile('image')
+            $data['image'] = $request->hasFile('image')
                 ? $this->saveUploadedImage($request->file('image'))
                 : $this->saveBase64Image($request->input('image_base64'));
         }
 
-        if ($request->has('seals')) $post->seals = $this->parseSeals($request->input('seals'));
+        if ($request->has('seals')) $data['seals'] = $this->parseSeals($request->input('seals'));
 
-        $post->save();
+        $post->update($data);
         return response()->json(['message' => 'Atualizado!', 'post' => $this->transformPost($post)]);
     }
 

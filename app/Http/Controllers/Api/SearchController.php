@@ -10,59 +10,36 @@ class SearchController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Post::query()->with('user');
+        $query = Post::query();
 
         if ($request->filled('search')) {
-            $rawSearch = $request->search; 
-            $searchTerm = '%' . $rawSearch . '%'; 
-
-            $query->where(function ($q) use ($searchTerm, $rawSearch) {
+            $searchTerm = '%' . $request->search . '%';
+            $query->where(function ($q) use ($searchTerm) {
                 $q->where('title', 'like', $searchTerm)
                   ->orWhere('description', 'like', $searchTerm)
+                  ->orWhere('price', 'like', $searchTerm)
+                  ->orWhere('stock', 'like', $searchTerm)
                   ->orWhere('location', 'like', $searchTerm);
-                
-                if (is_numeric($rawSearch)) {
-                    $q->orWhere('price', 'like', $searchTerm)
-                      ->orWhere('stock', 'like', $searchTerm);
-                }
             });
         }
 
-        if ($request->filled('seals')) {
-            $query->where('seals', 'like', '%' . $request->seals . '%');
-        }
-
-        $resultados = $query->latest()->get()->map(function ($post) {
+        $resultados = $query->with('user')->latest()->get()->map(function ($post) {
             return [
-                // Removido o (string) para evitar o erro no Flutter
-                'id'          => $post->id,
-                'user_id'     => $post->user_id,
-                'user_name'   => $post->user->name ?? 'Usuário',
-                'user_phone'  => $post->user->phone ?? '',
+                'id'          => (string) $post->id,
+                'user_id'     => (string) $post->user_id,
+                'user_name'   => $post->user->name ?? null,
+                'user_phone'  => $post->user->phone ?? null,
                 'title'       => $post->title,
                 'description' => $post->description,
-                'price'       => $post->price ? (double) $post->price : 0.0,
+                'price'       => $post->price ? (string) $post->price : '0',
                 'location'    => $post->location,
-                'stock'       => $post->stock ? (int) $post->stock : 0,
-                'seals'       => $this->formatSeals($post->seals),
-                'image'       => $post->image ? asset('storage/' . $post->image) : null,
+                'stock'       => $post->stock ? (string) $post->stock : '0',
+                'seals'       => $post->seals ? json_decode($post->seals) : [],
+                'image'       => $post->image ?? null,
                 'created_at'  => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
             ];
         });
 
         return response()->json($resultados, 200);
-    }
-
-    private function formatSeals(?string $seals): array
-    {
-        if (!$seals) return [];
-        $map = [
-            'autonomo'    => 'Autônomo', 
-            'empresa'     => 'Empresa', 
-            'cooperativa' => 'Cooperativa', 
-            'organico'    => 'Orgânico'
-        ];
-        $items = json_decode($seals, true) ?? [];
-        return array_map(fn($s) => $map[$s] ?? $s, $items);
     }
 }
