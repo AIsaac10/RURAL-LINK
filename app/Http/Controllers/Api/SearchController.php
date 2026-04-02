@@ -10,16 +10,19 @@ class SearchController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Post::query();
+        $query = Post::query()->with('user');
 
         if ($request->filled('search')) {
-            $searchTerm = '%' . $request->search . '%';
-            $query->where(function ($q) use ($searchTerm) {
+            $rawSearch = $request->search; // Valor puro para checar se é número
+            $searchTerm = '%' . $rawSearch . '%'; // Valor com % para o LIKE
+
+            $query->where(function ($q) use ($searchTerm, $rawSearch) {
                 $q->where('title', 'like', $searchTerm)
                   ->orWhere('description', 'like', $searchTerm)
                   ->orWhere('location', 'like', $searchTerm);
                 
-                if (is_numeric($searchTerm)) {
+                // Agora sim a verificação numérica funciona
+                if (is_numeric($rawSearch)) {
                     $q->orWhere('price', 'like', $searchTerm)
                       ->orWhere('stock', 'like', $searchTerm);
                 }
@@ -30,19 +33,18 @@ class SearchController extends Controller
             $query->where('seals', 'like', '%' . $request->seals . '%');
         }
 
-        // Importante: Adicionei o latest() para os posts novos aparecerem primeiro
-        $resultados = $query->with('user')->latest()->get()->map(function ($post) {
+        $resultados = $query->latest()->get()->map(function ($post) {
             return [
                 'id'          => (string) $post->id,
                 'user_id'     => (string) $post->user_id,
-                'user_name'   => $post->user->name ?? null,
-                'user_phone'  => $post->user->phone ?? null,
-                'title'       => $post->title,
-                'description' => $post->description,
+                'user_name'   => $post->user->name ?? 'Usuário',
+                'user_phone'  => $post->user->phone ?? '',
+                'title'       => (string) $post->title,
+                'description' => (string) $post->description,
                 'price'       => $post->price ? (string) $post->price : '0',
-                'location'    => $post->location,
+                'location'    => (string) ($post->location ?? ''),
                 'stock'       => $post->stock ? (string) $post->stock : '0',
-                'seals'       => $this->formatSeals($post->seals), // Usando a mesma lógica de nomes amigáveis
+                'seals'       => $this->formatSeals($post->seals),
                 'image'       => $post->image ? asset('storage/' . $post->image) : null,
                 'created_at'  => $post->created_at?->timezone('America/Sao_Paulo')->format('d/m/Y H:i'),
             ];
@@ -50,6 +52,7 @@ class SearchController extends Controller
 
         return response()->json($resultados, 200);
     }
+
     private function formatSeals(?string $seals): array
     {
         if (!$seals) return [];
