@@ -44,9 +44,9 @@ private function transformPost(Post $post): array
     {
         if (!$seals) return [];
         $map = [
-            'autonomo'    => 'Autônomo',
-            'empresa'     => 'Empresa',
-            'cooperativa' => 'Cooperativa',
+            'autonomo'    => 'Autônomo', 
+            'empresa'     => 'Empresa', 
+            'cooperativa' => 'Cooperativa', 
             'organico'    => 'Orgânico'
         ];
         $items = json_decode($seals, true) ?? [];
@@ -65,7 +65,6 @@ private function transformPost(Post $post): array
             $base64 = preg_replace('/^data:image\/\w+;base64,/', '', $base64);
             $decoded = base64_decode($base64);
             if (!$decoded) return null;
-
             $filename = 'posts/' . Str::uuid() . '.jpg';
             Storage::disk('public')->put($filename, $decoded);
             return $filename;
@@ -96,12 +95,11 @@ private function transformPost(Post $post): array
         $validated = $request->validate([
             'title'        => 'required|string|max:255',
             'description'  => 'nullable|string',
-            'price'        => 'nullable|numeric|min:0',
+            'price'        => 'nullable|numeric',
             'location'     => 'nullable|string',
-            'stock'        => 'nullable|integer|min:0',
+            'stock'        => 'nullable|integer',
             'image'        => 'nullable|file|image|max:5120',
             'image_base64' => 'nullable|string',
-            'seals'        => 'nullable'
         ]);
 
         $imagePath = $request->hasFile('image')
@@ -110,11 +108,11 @@ private function transformPost(Post $post): array
 
         $post = Post::create([
             'user_id'     => $request->user()->id,
-            'title'       => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'price'       => $validated['price'] ?? 0,
-            'location'    => $validated['location'] ?? null,
-            'stock'       => $validated['stock'] ?? 0,
+            'title'       => $request->title,
+            'description' => $request->description,
+            'price'       => $request->price ?? 0,
+            'location'    => $request->location,
+            'stock'       => $request->stock ?? 0,
             'image'       => $imagePath,
             'seals'       => $this->parseSeals($request->input('seals'))
         ]);
@@ -125,56 +123,29 @@ private function transformPost(Post $post): array
     public function update(Request $request, $id)
     {
         $post = Post::findOrFail($id);
+        if ($post->user_id !== $request->user()->id) return response()->json(['message' => 'Não autorizado'], 403);
 
-        if ($post->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Não autorizado'], 403);
-        }
-
-        $validated = $request->validate([
-            'title'        => 'sometimes|required|string|max:255',
-            'description'  => 'nullable|string',
-            'price'        => 'nullable|numeric|min:0',
-            'location'     => 'nullable|string',
-            'stock'        => 'nullable|integer|min:0',
-            'image'        => 'nullable|file|image|max:5120',
-            'image_base64' => 'nullable|string',
-            'seals'        => 'nullable'
-        ]);
-
-        $post->fill($request->only(['title', 'description', 'price', 'location', 'stock']));
+        $data = $request->only(['title', 'description', 'price', 'location', 'stock']);
 
         if ($request->hasFile('image') || $request->filled('image_base64')) {
-            if ($post->image) {
-                Storage::disk('public')->delete($post->image);
-            }
-            $post->image = $request->hasFile('image')
+            if ($post->image) Storage::disk('public')->delete($post->image);
+            $data['image'] = $request->hasFile('image')
                 ? $this->saveUploadedImage($request->file('image'))
                 : $this->saveBase64Image($request->input('image_base64'));
         }
 
-        if ($request->has('seals')) {
-            $post->seals = $this->parseSeals($request->input('seals'));
-        }
+        if ($request->has('seals')) $data['seals'] = $this->parseSeals($request->input('seals'));
 
-        $post->save();
-
+        $post->update($data);
         return response()->json(['message' => 'Atualizado!', 'post' => $this->transformPost($post)]);
     }
 
     public function destroy(Request $request, $id)
     {
         $post = Post::findOrFail($id);
-
-        if ($post->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Não autorizado'], 403);
-        }
-
-        if ($post->image) {
-            Storage::disk('public')->delete($post->image);
-        }
-
+        if ($post->user_id !== $request->user()->id) return response()->json(['message' => 'Não autorizado'], 403);
+        if ($post->image) Storage::disk('public')->delete($post->image);
         $post->delete();
-
         return response()->json(['message' => 'Deletado!']);
     }
 }
